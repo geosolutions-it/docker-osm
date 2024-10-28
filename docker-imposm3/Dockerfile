@@ -1,5 +1,5 @@
-FROM golang:1.16.0-buster as mother
-MAINTAINER Asdrubal Gonzalez <asdrubal.gonzalez@geo-solutions.it>
+FROM golang:1.23-bookworm AS mother
+LABEL maintainer="GeoSolutions <info@geosolutionsgroup.com>"
 
 WORKDIR /code
 #Install the tool for merging the PBF files.
@@ -9,26 +9,27 @@ COPY ./*.pbf /code/
 RUN osmium merge *.pbf -o /code/region/region-latest.osm.pbf
 
 # Final Image.
-FROM golang:1.16.0-buster
-MAINTAINER Asdrubal Gonzalez <asdrubal.gonzalez@geo-solutions.it>
+FROM golang:1.23-bookworm
+LABEL maintainer="GeoSolutions <info@geosolutionsgroup.com>"
 
 RUN apt update && apt install -y python3-pip \
-      #Setuptools python package added
-      python3-setuptools \ 
-      libprotobuf-dev libleveldb-dev libgeos-dev \
-      libpq-dev python3-dev postgresql-client-11 python-setuptools \
-      --no-install-recommends
+    #Setuptools python package added
+    python3-setuptools \
+    libprotobuf-dev libleveldb-dev libgeos-dev \
+    libpq-dev python3-dev postgresql-client python3-setuptools \
+    --no-install-recommends
 
 RUN ln -s /usr/lib/libgeos_c.so /usr/lib/libgeos.so
 
 WORKDIR $GOPATH
-RUN go get github.com/tools/godep
+RUN go install github.com/tools/godep@latest
 RUN git clone https://github.com/omniscale/imposm3 src/github.com/omniscale/imposm3
 RUN cd src/github.com/omniscale/imposm3 && make update_version && go install ./cmd/imposm/
 
 # Preparing everything for the importer.
 ADD requirements.txt /home/requirements.txt
-RUN pip3 install -r /home/requirements.txt
+# RUN pip3 install -r /home/requirements.txt
+RUN apt install python3-psycopg2
 ADD importer.py /home/
 
 # Add YAML Mapping file

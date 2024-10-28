@@ -1,1 +1,2 @@
-psycopg2-binary
+# Now installed with system package manager.
+# psycopg2-binary
